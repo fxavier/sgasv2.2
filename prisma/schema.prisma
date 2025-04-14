@@ -1,0 +1,1071 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id           String        @id @default(uuid())
+  clerkUserId  String        @unique
+  email        String        @unique
+  name         String?
+  imageUrl     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  text      String
+  amount    Float
+  userId    String
+  user      User     @relation(fields: [userId], references: [clerkUserId], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// DocumentType model
+model DocumentType {
+  id          String     @id @default(uuid())
+  description String
+  created_at  DateTime   @default(now())
+  documents   Document[]
+
+  @@map("document_types")
+}
+
+// Document model
+enum DocumentState {
+  REVISION
+  INUSE
+  OBSOLETE
+}
+
+model Document {
+  id              String        @id @default(uuid())
+  code            String
+  creationDate    DateTime
+  revisionDate    DateTime
+  documentName    String
+  documentType    DocumentType  @relation(fields: [documentTypeId], references: [id])
+  documentTypeId  String
+  documentPath    String
+  documentState   DocumentState
+  retentionPeriod DateTime
+  disposalMethod  String
+  observation     String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("documents")
+}
+
+// Strategic and Specific Objectives
+model StrategicObjective {
+  id                       String              @id @default(uuid())
+  description              String
+  goals                    String
+  strategiesForAchievement String
+  specificObjectives       SpecificObjective[]
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
+
+  @@map("strategic_objectives")
+}
+
+model SpecificObjective {
+  id                    String             @id @default(uuid())
+  strategicObjective    StrategicObjective @relation(fields: [strategicObjectiveId], references: [id])
+  strategicObjectiveId  String
+  specificObjective     String
+  actionsForAchievement String
+  responsiblePerson     String
+  necessaryResources    String
+  indicator             String
+  goal                  String
+  monitoringFrequency   String
+  deadline              DateTime
+  observation           String
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@map("specific_objectives")
+}
+
+// Waste Management Models
+model WasteTransferLog {
+  id                  String   @id @default(uuid())
+  wasteType           String
+  howIsWasteContained String
+  howMuchWaste        Int
+  referenceNumber     String
+  dateOfRemoval       DateTime
+  transferCompany     String
+  specialInstructions String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("waste_transfer_logs")
+}
+
+model WasteManagement {
+  id                          String   @id @default(uuid())
+  wasteRoute                  String
+  labelling                   String
+  storage                     String
+  transportationCompanyMethod String
+  disposalCompany             String
+  specialInstructions         String
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@map("waste_management")
+}
+
+// Department model
+model Department {
+  id                         String                                      @id @default(uuid())
+  name                       String
+  description                String
+  relatorioAcidenteIncidente RelatorioAcidenteIncidente[]
+  environmentRiskAssessments EnvironAndSocialRiskAndImapactAssessement[]
+  trainingNeeds              TrainingNeeds[]
+  trainingEffectiveness      TrainingEffectivnessAssessment[]
+  pessoaEnvolvida            PessoaEnvolvida[]
+  claimNonCompliance         ClaimNonComplianceControl[]
+  createdAt                  DateTime                                    @default(now())
+  updatedAt                  DateTime                                    @updatedAt
+
+  @@map("departments")
+}
+
+// Subproject model
+model Subproject {
+  id                         String                                      @id @default(uuid())
+  name                       String
+  contractReference          String?
+  contractorName             String?
+  estimatedCost              Decimal?
+  location                   String
+  geographicCoordinates      String?
+  type                       String
+  approximateArea            String
+  environmentRiskAssessments EnvironAndSocialRiskAndImapactAssessement[]
+  relatorioAcidenteIncidente RelatorioAcidenteIncidente[]
+  screeningResults           ScreeningResult[]
+  consultations              ConsultationAndEngagement[]
+  risks                      EnvironmentalSocialScreening[]
+  trainingNeeds              TrainingNeeds[]
+  trainingEffectiveness      TrainingEffectivnessAssessment[]
+  claimNonCompliance         ClaimNonComplianceControl[]
+  createdAt                  DateTime                                    @default(now())
+  updatedAt                  DateTime                                    @updatedAt
+
+  @@map("subprojects")
+}
+
+// Risk Management Models
+enum Duration {
+  CURTO_PRAZO
+  MEDIO_PRAZO
+  LONGO_PRAZO
+}
+
+enum Extension {
+  LOCAL
+  REGIONAL
+  NACIONAL
+  GLOBAL
+}
+
+enum Intensity {
+  BAIXA
+  MEDIA
+  ALTA
+}
+
+enum LifeCycle {
+  PRE_CONSTRUCAO
+  CONSTRUCAO
+  OPERACAO
+  DESATIVACAO
+  ENCERRAMENTO
+  REINTEGRACAO_RESTAURACAO
+}
+
+enum Probability {
+  IMPROVAVEL
+  PROVAVEL
+  ALTAMENTE_PROVAVEL
+  DEFINITIVA
+}
+
+enum ResponseType {
+  SIM
+  NAO
+}
+
+enum Statute {
+  POSITIVO
+  NEGATIVO
+}
+
+enum Status {
+  ACTIVE
+  REVOKED
+  AMENDED
+}
+
+model EnvironmentalFactor {
+  id              String                                      @id @default(uuid())
+  description     String
+  riskAssessments EnvironAndSocialRiskAndImapactAssessement[]
+  createdAt       DateTime                                    @default(now())
+  updatedAt       DateTime                                    @updatedAt
+
+  @@map("environmental_factors")
+}
+
+model RisksAndImpact {
+  id              String                                      @id @default(uuid())
+  description     String
+  riskAssessments EnvironAndSocialRiskAndImapactAssessement[]
+  createdAt       DateTime                                    @default(now())
+  updatedAt       DateTime                                    @updatedAt
+
+  @@map("risks_and_impacts")
+}
+
+model LegalRequirementControl {
+  id                 String                                      @id @default(uuid())
+  number             String
+  documentTitle      String
+  effectiveDate      DateTime
+  description        String
+  status             Status
+  amendedDescription String?
+  observation        String?
+  lawFile            String?
+  riskAssessments    EnvironAndSocialRiskAndImapactAssessement[]
+  createdAt          DateTime                                    @default(now())
+  updatedAt          DateTime                                    @updatedAt
+
+  @@map("legal_requirement_controls")
+}
+
+model EnvironAndSocialRiskAndImapactAssessement {
+  id                      String                    @id @default(uuid())
+  department              Department?               @relation(fields: [departmentId], references: [id])
+  departmentId            String?
+  subproject              Subproject?               @relation(fields: [subprojectId], references: [id])
+  subprojectId            String?
+  activity                String
+  risksAndImpact          RisksAndImpact            @relation(fields: [risksAndImpactId], references: [id])
+  risksAndImpactId        String
+  environmentalFactor     EnvironmentalFactor       @relation(fields: [environmentalFactorId], references: [id])
+  environmentalFactorId   String
+  lifeCycle               LifeCycle
+  statute                 Statute
+  extension               Extension
+  duration                Duration
+  intensity               Intensity
+  probability             Probability
+  significance            String?
+  descriptionOfMeasures   String
+  deadline                DateTime
+  responsible             String?
+  effectivenessAssessment String
+  legalRequirements       LegalRequirementControl[]
+  complianceRequirements  String
+  observations            String
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+
+  @@map("environ_and_social_risk_assessments")
+}
+
+// Training Models
+model TrainingNeeds {
+  id                            String      @id @default(uuid())
+  filledBy                      String
+  date                          DateTime
+  department                    Department? @relation(fields: [departmentId], references: [id])
+  departmentId                  String?
+  subproject                    Subproject? @relation(fields: [subprojectId], references: [id])
+  subprojectId                  String?
+  training                      String
+  trainingObjective             String
+  proposalOfTrainingEntity      String
+  potentialTrainingParticipants String
+  createdAt                     DateTime    @default(now())
+  updatedAt                     DateTime    @updatedAt
+
+  @@map("training_needs")
+}
+
+enum TrainingType {
+  Internal
+  External
+}
+
+enum TrainingMonth {
+  January
+  February
+  March
+  April
+  May
+  June
+  July
+  August
+  September
+  October
+  November
+  December
+}
+
+enum TrainingStatus {
+  Planned
+  Completed
+}
+
+model TrainingPlan {
+  id                 String         @id @default(uuid())
+  updatedBy          String
+  date               DateTime
+  year               Int
+  trainingArea       String
+  trainingTitle      String
+  trainingObjective  String
+  trainingType       TrainingType
+  trainingEntity     String
+  duration           String
+  numberOfTrainees   Int
+  trainingRecipients String
+  trainingMonth      TrainingMonth
+  trainingStatus     TrainingStatus
+  observations       String
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@map("training_plans")
+}
+
+enum AnswerChoices {
+  Satisfactory
+  Partially_Satisfactory
+  Unsatisfactory
+}
+
+enum HumanResourceAnswerChoices {
+  effective
+  ineffective
+}
+
+model TrainingEvaluationQuestions {
+  id                       String                           @id @default(uuid())
+  question                 String
+  effectivenessAssessments TrainingEffectivnessAssessment[]
+  createdAt                DateTime                         @default(now())
+  updatedAt                DateTime                         @updatedAt
+
+  @@map("training_evaluation_questions")
+}
+
+model TrainingEffectivnessAssessment {
+  id                           String                      @id @default(uuid())
+  training                     String
+  date                         DateTime
+  department                   Department?                 @relation(fields: [departmentId], references: [id])
+  departmentId                 String?
+  subproject                   Subproject?                 @relation(fields: [subprojectId], references: [id])
+  subprojectId                 String?
+  trainee                      String
+  immediateSupervisor          String
+  trainingEvaluationQuestion   TrainingEvaluationQuestions @relation(fields: [trainingEvaluationQuestionId], references: [id])
+  trainingEvaluationQuestionId String
+  answer                       AnswerChoices
+  humanResourceEvaluation      HumanResourceAnswerChoices
+  createdAt                    DateTime                    @default(now())
+  updatedAt                    DateTime                    @updatedAt
+
+  @@map("training_effectiveness_assessments")
+}
+
+model Position {
+  id             String           @id @default(uuid())
+  name           String
+  trainingMatrix TrainingMatrix[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@map("positions")
+}
+
+model Training {
+  id             String           @id @default(uuid())
+  name           String
+  trainingMatrix TrainingMatrix[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@map("trainings")
+}
+
+model ToolBoxTalks {
+  id             String           @id @default(uuid())
+  name           String
+  trainingMatrix TrainingMatrix[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@map("toolbox_talks")
+}
+
+enum Effectiveness {
+  Effective
+  Not_effective
+}
+
+model TrainingMatrix {
+  id                          String        @id @default(uuid())
+  date                        DateTime?
+  position                    Position      @relation(fields: [positionId], references: [id])
+  positionId                  String
+  training                    Training      @relation(fields: [trainingId], references: [id])
+  trainingId                  String
+  toolboxTalks                ToolBoxTalks  @relation(fields: [toolboxTalksId], references: [id])
+  toolboxTalksId              String
+  effectiveness               Effectiveness
+  actionsTrainingNotEffective String?
+  approvedBy                  String
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
+
+  @@map("training_matrix")
+}
+
+model AcceptanceConfirmation {
+  id          String      @id @default(uuid())
+  description String
+  ohsActing   OHSACTING[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("acceptance_confirmations")
+}
+
+model OHSACTING {
+  id                     String                   @id @default(uuid())
+  fullname               String
+  designation            String?
+  termsOfOfficeFrom      String?
+  termsOfOfficeTo        String?
+  acceptanceConfirmation AcceptanceConfirmation[]
+  date                   DateTime                 @default(now())
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+
+  @@map("ohs_acting")
+}
+
+// Incident Models
+enum TipoIncidente {
+  Humano
+  Seguranca
+  Infraestruturas
+  Ambiental
+  Social
+  Outros
+}
+
+enum EnvoldidoOutroAcidente {
+  Sim
+  Nao
+}
+
+enum RealizadaAnaliseRiscoImpactoAmbientalAntes {
+  Sim
+  Nao
+}
+
+enum ExisteProcedimentoParaActividade {
+  Sim
+  Nao
+}
+
+enum ColaboradorRecebeuTreinamento {
+  Sim
+  Nao
+}
+
+enum NaturezaEExtensaoIncidente {
+  Intoxicacao_leve
+  Intoxicacao_grave
+  Ferimento_leve
+  Ferimento_grave
+  Morte
+  Nenhum
+  Outros
+}
+
+enum PossiveisCausasAcidenteMetodologia {
+  Falta_de_procedimentos_para_actividade
+  Falhas_no_procedimento_existente
+  Falta_de_plano_de_trabalho
+  Falha_na_comunicacao
+  Outros
+}
+
+enum PossiveisCausasAcidenteEquipamentos {
+  Falha_de_equipamento
+  Equipamento_inapropriado
+  Falha_na_proteccao_do_equipamento
+  Falha_na_sinalizacao
+  Espaco_inapropriado_para_equipamento
+  Outros
+}
+
+enum PossiveisCausasAcidenteMaterial {
+  Ferramenta_defeituosa
+  Falha_na_ferramenta
+  Falta_de_inventario
+  EPI_inadequado
+  Outros
+}
+
+enum PossiveisCausasAcidenteColaboradores {
+  Falta_de_treinamento
+  Negligencia_do_colaborador
+  Negligencia_do_operador_sazonal
+  Nao_concardancia_com_procedimentos
+  Uso_inadequado_de_equipamento
+  Outros
+}
+
+enum PossiveisCausasAcidenteAmbienteESeguranca {
+  Agentes_perigosos
+  Falta_de_sinalizacao
+  Pavimento_irregular
+  Pavimento_escorregadio
+  Outros
+}
+
+enum PossiveisCausasAcidenteMedicoes {
+  Falta_no_instrumento_de_medicao
+  Instrumento_de_ajustamento_inadequado
+  Falha_no_instrumento_de_calibracao
+  Falta_de_inspencao
+  Outros
+}
+
+enum ObrasForamSuspensas {
+  Sim
+  Nao
+}
+
+enum IncidenteEnvolveuEmpreteiro {
+  Sim
+  Nao
+}
+
+model PessoaEnvolvida {
+  id                         String                       @id @default(uuid())
+  nome                       String
+  departamento               Department                   @relation(fields: [departamentoId], references: [id])
+  departamentoId             String
+  outrasInformacoes          String
+  relatorioAcidenteIncidente RelatorioAcidenteIncidente[]
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @updatedAt
+
+  @@map("pessoas_envolvidas")
+}
+
+model PessoasEnvolvidasNaInvestigacao {
+  id                 String                       @id @default(uuid())
+  nome               String
+  empresa            String
+  actividade         String
+  assinatura         String
+  data               DateTime
+  relatoriosAcidente RelatorioAcidenteIncidente[]
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  @@map("pessoas_envolvidas_na_investigacao")
+}
+
+model AccoesImediatasECorrectivas {
+  id                 String                       @id @default(uuid())
+  accao              String
+  descricao          String
+  responsavel        String
+  data               DateTime
+  assinatura         String
+  relatoriosAcidente RelatorioAcidenteIncidente[]
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  @@map("accoes_imediatas_e_correctivas")
+}
+
+model RelatorioAcidenteIncidente {
+  id                                         String                                     @id @default(uuid())
+  nome                                       String
+  funcao                                     String
+  departamento                               Department?                                @relation(fields: [departamentoId], references: [id])
+  departamentoId                             String?
+  subprojecto                                Subproject?                                @relation(fields: [subprojectoId], references: [id])
+  subprojectoId                              String?
+  data                                       DateTime
+  hora                                       DateTime
+  local                                      String
+  actividadeEmCurso                          String
+  descricaoDoAcidente                        String
+  tipoDeIncidente                            TipoIncidente
+  equipamentoEnvolvido                       String
+  observacao                                 String
+  colaboradorEnvolvidoOutroAcidenteAntes     EnvoldidoOutroAcidente
+  realizadaAnaliseRiscoImpactoAmbientalAntes RealizadaAnaliseRiscoImpactoAmbientalAntes
+  existeProcedimentoParaActividade           ExisteProcedimentoParaActividade
+  colaboradorRecebeuTreinamento              ColaboradorRecebeuTreinamento
+  incidenteEnvolveEmpreteiro                 IncidenteEnvolveuEmpreteiro
+  nomeComercialEmpreteiro                    String?
+  naturezaEExtensaoIncidente                 NaturezaEExtensaoIncidente
+  possiveisCausasAcidenteMetodologia         PossiveisCausasAcidenteMetodologia
+  possiveisCausasAcidenteEquipamentos        PossiveisCausasAcidenteEquipamentos
+  possiveisCausasAcidenteMaterial            PossiveisCausasAcidenteMaterial
+  possiveisCausasAcidenteColaboradores       PossiveisCausasAcidenteColaboradores
+  possiveisCausasAcidenteAmbienteESeguranca  PossiveisCausasAcidenteAmbienteESeguranca
+  possiveisCausasAcidenteMedicoes            PossiveisCausasAcidenteMedicoes
+  pessoaEnvolvida                            PessoaEnvolvida                            @relation(fields: [pessoaEnvolvidaId], references: [id])
+  pessoaEnvolvidaId                          String
+  pessoasEnvolvidasNaInvestigacao            PessoasEnvolvidasNaInvestigacao[]
+  accoesImediatasECorrectivas                AccoesImediatasECorrectivas[]
+  fotografiaFrontal                          String?
+  fotografiaPosterior                        String?
+  fotografiaLateralDireita                   String?
+  fotografiaLateralEsquerda                  String?
+  fotografiaDoMelhorAngulo                   String?
+  fotografia                                 String?
+  criadoEm                                   DateTime                                   @default(now())
+  updatedAt                                  DateTime                                   @updatedAt
+
+  @@map("relatorio_acidente_incidente")
+}
+
+model ListaVerificacaoKitPrimeirosSocorros {
+  id                   String   @id @default(uuid())
+  descricao            String
+  quantidade           Int
+  data                 DateTime
+  prazo                DateTime
+  observacao           String
+  inspecaoRealizadaPor String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("lista_verificacao_kit_primeiros_socorros")
+}
+
+model Incidents {
+  id                   String                @id @default(uuid())
+  description          String
+  incidentFlashReports IncidentFlashReport[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  @@map("incidents")
+}
+
+enum Type {
+  Employee
+  Subcontrator
+}
+
+enum FurtherInvestigatioRequired {
+  Yes
+  No
+}
+
+model IncidentFlashReport {
+  id                           String                      @id @default(uuid())
+  incidents                    Incidents[]
+  dateIncident                 DateTime
+  timeIncident                 DateTime
+  section                      String?
+  locationIncident             String
+  dateReported                 DateTime
+  supervisor                   String
+  type                         Type
+  employeeName                 String?
+  subcontratorName             String?
+  incidentDescription          String
+  detailsOfInjuredPerson       String
+  witnessStatement             String?
+  preliminaryFindings          String?
+  recomendations               String
+  furtherInvestigationRequired FurtherInvestigatioRequired
+  incidentReportable           FurtherInvestigatioRequired
+  lendersToBeNotified          FurtherInvestigatioRequired
+  authorOfReport               String
+  dateCreated                  DateTime                    @default(now())
+  approverName                 String
+  dateApproved                 DateTime
+  createdAt                    DateTime                    @default(now())
+  updatedAt                    DateTime                    @updatedAt
+
+  @@map("incident_flash_reports")
+}
+
+// Claims and Complaints Models
+enum ClaimStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum EfecctivivenessEvaluation {
+  EFFECTIVE
+  NOT_EFFECTIVE
+}
+
+enum NotifiedComplaint {
+  YES
+  NO
+}
+
+model ClaimNonComplianceControl {
+  id                          String                    @id @default(uuid())
+  number                      String                    @unique
+  department                  Department?               @relation(fields: [departmentId], references: [id])
+  departmentId                String?
+  subproject                  Subproject?               @relation(fields: [subprojectId], references: [id])
+  subprojectId                String?
+  nonComplianceDescription    String
+  identifiedCauses            String
+  correctiveActions           String
+  responsiblePerson           String
+  deadline                    DateTime
+  status                      ClaimStatus               @default(PENDING)
+  effectivenessEvaluation     EfecctivivenessEvaluation @default(NOT_EFFECTIVE)
+  responsiblePersonEvaluation String
+  observation                 String
+  createdAt                   DateTime                  @default(now())
+  updatedAt                   DateTime                  @updatedAt
+
+  @@map("claim_non_compliance_control")
+}
+
+model ClaimComplainControl {
+  id                             String      @id @default(uuid())
+  number                         String      @unique
+  claimComplainSubmittedBy       String
+  claimComplainReceptionDate     DateTime
+  claimComplainDescription       String
+  treatmentAction                String
+  claimComplainResponsiblePerson String
+  claimComplainDeadline          DateTime
+  claimComplainStatus            ClaimStatus @default(PENDING)
+  closureDate                    DateTime
+  observation                    String
+  createdAt                      DateTime    @default(now())
+  updatedAt                      DateTime    @updatedAt
+
+  @@map("claim_complain_control")
+}
+
+enum ComplaintantGender {
+  MALE
+  FEMALE
+}
+
+enum AnonymousComplaint {
+  YES
+  NO
+}
+
+enum ComplaintantAccepted {
+  YES
+  NO
+}
+
+enum ClaimCategory {
+  Odor
+  Noise
+  Effluents
+  Company_vehicles
+  Flow_of_migrant_workers
+  Security_personnel
+  GBV_SA_SEA
+  Other
+}
+
+enum CollectedInformation {
+  Photos
+  Proof_of_legitimacy_documents
+}
+
+enum ResolutionType {
+  Internal_resolution
+  Second_level_resolution
+  Third_level_resolution
+}
+
+enum ResolutionSubmitted {
+  YES
+  NO
+}
+
+enum ComplaintantSatisfaction {
+  SATISFIED
+  NOT_SATISFIED
+}
+
+enum MonitoringAfterClosure {
+  YES
+  NO
+}
+
+model PhotoDocumentProvingClosure {
+  id                       String                    @id @default(uuid())
+  photo                    String
+  document                 String
+  createdBy                String
+  complaintAndClaimRecords ComplaintAndClaimRecord[]
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+
+  @@map("photo_document_proving_closure")
+}
+
+model ComplaintAndClaimRecord {
+  id                                 String                        @id @default(uuid())
+  number                             String                        @unique
+  dateOccurred                       DateTime
+  localOccurrence                    String
+  howOccurred                        String
+  whoInvolved                        String
+  reportAndExplanation               String
+  registeredDate                     DateTime                      @default(now())
+  claimLocalOccurrence               String
+  complaintantGender                 ComplaintantGender
+  complaintantAge                    Int
+  anonymousComplaint                 AnonymousComplaint
+  telephone                          String
+  email                              String?
+  complaintantAddress                String
+  complaintantAccepted               ComplaintantAccepted
+  actionTaken                        String
+  complaintantNotified               NotifiedComplaint             @default(NO)
+  notificationMethod                 String
+  closingDate                        DateTime
+  claimCategory                      ClaimCategory
+  otherClaimCategory                 String
+  inspectionDate                     DateTime
+  collectedInformation               CollectedInformation
+  resolutionType                     ResolutionType
+  resolutionDate                     DateTime
+  resolutionSubmitted                ResolutionSubmitted
+  correctiveActionTaken              String
+  involvedInResolution               String
+  complaintantSatisfaction           ComplaintantSatisfaction
+  photosAndDocumentsProvingClosure   PhotoDocumentProvingClosure[]
+  resourcesSpent                     Decimal                       @default(0.00)
+  numberOfDaysSinceReceivedToClosure Int
+  monitoringAfterClosure             MonitoringAfterClosure
+  monitoringMethodAndFrequency       String
+  followUp                           String
+  involvedInstitutions               String?
+  suggestedPreventiveActions         String
+  createdAt                          DateTime                      @default(now())
+  updatedAt                          DateTime                      @updatedAt
+
+  @@map("complaint_and_claim_record")
+}
+
+// Worker Grievance Models
+enum PreferedContactMethod {
+  EMAIL
+  PHONE
+  FACE_TO_FACE
+}
+
+enum PreferedLanguage {
+  PORTUGUESE
+  ENGLISH
+  OTHER
+}
+
+model WorkerGrievance {
+  id                                          String                @id @default(uuid())
+  name                                        String
+  company                                     String
+  date                                        DateTime
+  preferedContactMethod                       PreferedContactMethod
+  contact                                     String
+  preferedLanguage                            PreferedLanguage
+  otherLanguage                               String?
+  grievanceDetails                            String
+  uniqueIdentificationOfCompanyAcknowlegement String
+  nameOfPersonAcknowledgingGrievance          String
+  positionOfPersonAcknowledgingGrievance      String
+  dateOfAcknowledgement                       DateTime
+  signatureOfPersonAcknowledgingGrievance     String
+  followUpDetails                             String
+  closedOutDate                               DateTime
+  signatureOfResponseCorrectiveActionPerson   String
+  acknowledgeReceiptOfResponse                String
+  nameOfPersonAcknowledgingResponse           String
+  signatureOfPersonAcknowledgingResponse      String
+  dateOfAcknowledgementResponse               DateTime
+  createdAt                                   DateTime              @default(now())
+  updatedAt                                   DateTime              @updatedAt
+
+  @@map("worker_grievances")
+}
+
+// Environmental Screening Models
+enum Provinces {
+  MAPUTO
+  MAPUTO_CITY
+  GAZA
+  INHAMBANE
+  SOFALA
+  MANICA
+  TETE
+  ZAMBEZIA
+  NAMPULA
+  CABO_DELGADO
+  NIASSA
+}
+
+enum ActivityType {
+  TURISTICA
+  INDUSTRIAL
+  AGRO_PECUARIA
+  ENERGETICA
+  SERVICOS
+  OUTRA
+}
+
+enum DevelopmentStage {
+  NOVA
+  REABILITACAO
+  EXPANSAO
+  OUTRO
+}
+
+enum InsertionPoint {
+  RURAL
+  URBANO
+  PERIURBANO
+}
+
+enum TerritorialPlanningFramework {
+  ESPACO_HABITACIONAL
+  INDUSTRIAL
+  SERVICOS
+  OUTRO
+}
+
+enum PyhsicalCharacteristics {
+  PLANICIE
+  PLANALTO
+  VALE
+  MONTANHA
+}
+
+enum PredominantEcosystems {
+  FLUVIAL
+  LACUSTRE
+  MARINHO
+  TERRESTRE
+}
+
+enum LocationZone {
+  COSTEIRA
+  INTERIOR
+  ILHA
+}
+
+enum TypeOfPredominantVegetation {
+  FLORESTA
+  SAVANA
+  OUTRO
+}
+
+enum LandUse {
+  AGROPECUARIO
+  HABITACIONAL
+  INDUSTRIAL
+  PROTECCAO
+  OUTRO
+}
+
+model ContactPerson {
+  id        String   @id @default(uuid())
+  name      String
+  role      String
+  contact   String
+  date      DateTime
+  signature String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contact_persons")
+}
+
+model ResponsibleForFillingForm {
+  id        String                         @id @default(uuid())
+  name      String
+  role      String
+  contact   String
+  date      DateTime
+  signature String?
+  risks     EnvironmentalSocialScreening[]
+  createdAt DateTime                       @default(now())
+  updatedAt DateTime                       @updatedAt
+
+  @@map("responsible_for_filling_forms")
+}
+
+model ScreeningResult {
+  id           String     @id @default(uuid())
+  subproject   Subproject @relation(fields: [subprojectId], references: [id])
+  subprojectId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("screening_results")
+}
+
+model ConsultationAndEngagement {
+  id           String     @id @default(uuid())
+  subproject   Subproject @relation(fields: [subprojectId], references: [id])
+  subprojectId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("consultation_and_engagement")
+}
+
+model EnvironmentalSocialScreening {
+  id                          String                    @id @default(uuid())
+  subproject                  Subproject                @relation(fields: [subprojectId], references: [id])
+  subprojectId                String
+  responsibleForFillingForm   ResponsibleForFillingForm @relation(fields: [responsibleForFillingFormId], references: [id])
+  responsibleForFillingFormId String
+  createdAt                   DateTime                  @default(now())
+  updatedAt                   DateTime                  @updatedAt
+
+  @@map("environmental_social_screening")
+}

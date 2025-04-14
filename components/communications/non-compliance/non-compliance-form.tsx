@@ -1,0 +1,424 @@
+"use client";
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+// Mock data
+const mockDepartments = [
+  { id: 1, name: "Engineering" },
+  { id: 2, name: "Operations" },
+  { id: 3, name: "Safety" },
+];
+
+const mockSubprojects = [
+  { id: 1, name: "Project Alpha" },
+  { id: 2, name: "Project Beta" },
+  { id: 3, name: "Project Gamma" },
+];
+
+const formSchema = z.object({
+  number: z.string().min(1, "Number is required"),
+  department: z.object({
+    id: z.number(),
+    name: z.string(),
+  }).optional(),
+  subproject: z.object({
+    id: z.number(),
+    name: z.string(),
+  }).optional(),
+  non_compliance_description: z.string().min(10, "Description must be at least 10 characters"),
+  identified_causes: z.string().min(10, "Causes must be at least 10 characters"),
+  corrective_actions: z.string().min(10, "Actions must be at least 10 characters"),
+  responsible_person: z.string().min(2, "Responsible person must be at least 2 characters"),
+  deadline: z.string(),
+  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED']),
+  effectiveness_evaluation: z.enum(['EFFECTIVE', 'NOT_EFFECTIVE']),
+  responsible_person_evaluation: z.string().min(2, "Evaluator must be at least 2 characters"),
+  observation: z.string(),
+});
+
+interface NonComplianceFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  compliance: NonComplianceControl | null;
+  onClose: () => void;
+}
+
+export function NonComplianceForm({
+  open,
+  onOpenChange,
+  compliance,
+  onClose,
+}: NonComplianceFormProps) {
+  const { toast } = useToast();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      number: compliance?.number || "",
+      department: compliance?.department,
+      subproject: compliance?.subproject,
+      non_compliance_description: compliance?.non_compliance_description || "",
+      identified_causes: compliance?.identified_causes || "",
+      corrective_actions: compliance?.corrective_actions || "",
+      responsible_person: compliance?.responsible_person || "",
+      deadline: compliance?.deadline || format(new Date(), "yyyy-MM-dd"),
+      status: compliance?.status || "PENDING",
+      effectiveness_evaluation: compliance?.effectiveness_evaluation || "NOT_EFFECTIVE",
+      responsible_person_evaluation: compliance?.responsible_person_evaluation || "",
+      observation: compliance?.observation || "",
+    },
+  });
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      console.log(values);
+      
+      toast({
+        title: compliance ? "Non-compliance updated" : "Non-compliance created",
+        description: compliance
+          ? "The non-compliance record has been successfully updated."
+          : "The non-compliance record has been successfully created.",
+      });
+      
+      form.reset();
+      onClose();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "There was an error saving the non-compliance record. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 py-4 border-b">
+          <DialogTitle>
+            {compliance ? "Edit Non-Compliance" : "Create Non-Compliance"}
+          </DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="flex-1 p-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="department"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Department</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          const selected = mockDepartments.find(
+                            (dept) => dept.id === parseInt(value)
+                          );
+                          field.onChange(selected);
+                        }}
+                        value={field.value?.id?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select department" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {mockDepartments.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id.toString()}>
+                              {dept.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="subproject"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subproject</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          const selected = mockSubprojects.find(
+                            (proj) => proj.id === parseInt(value)
+                          );
+                          field.onChange(selected);
+                        }}
+                        value={field.value?.id?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select subproject" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {mockSubprojects.map((proj) => (
+                            <SelectItem key={proj.id} value={proj.id.toString()}>
+                              {proj.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="non_compliance_description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Non-Compliance Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe the non-compliance"
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="identified_causes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Identified Causes</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe the identified causes"
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="corrective_actions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Corrective Actions</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe the corrective actions"
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="responsible_person"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Responsible Person</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter responsible person" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="deadline"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Deadline</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(new Date(field.value), "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={new Date(field.value)}
+                            onSelect={(date) => field.onChange(format(date!, "yyyy-MM-dd"))}
+                            disabled={(date) =>
+                              date < new Date("1900-01-01")
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="PENDING">Pending</SelectItem>
+                          <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                          <SelectItem value="COMPLETED">Completed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="effectiveness_evaluation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Effectiveness Evaluation</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select evaluation" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="EFFECTIVE">Effective</SelectItem>
+                          <SelectItem value="NOT_EFFECTIVE">Not Effective</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="responsible_person_evaluation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Responsible Person for Evaluation</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter evaluator name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="observation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Observation</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter observations"
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+        </ScrollArea>
+        <div className="flex justify-end gap-4 p-6 border-t">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+            {compliance ? "Update" : "Create"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
