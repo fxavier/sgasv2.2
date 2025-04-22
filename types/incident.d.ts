@@ -34,7 +34,13 @@ interface IncidentReport {
   local: string;
   actividade_em_curso: string;
   descricao_do_acidente: string;
-  tipo_de_incidente: 'Humano' | 'Segurança' | 'Infraestruturas' | 'Ambiental' | 'Social' | 'Outros';
+  tipo_de_incidente:
+    | 'Humano'
+    | 'Segurança'
+    | 'Infraestruturas'
+    | 'Ambiental'
+    | 'Social'
+    | 'Outros';
   equipamento_envolvido: string;
   observacao: string;
   colaborador_envolvido_outro_acidente_antes: 'Sim' | 'Não';
@@ -43,13 +49,52 @@ interface IncidentReport {
   colaborador_recebeu_treinamento: 'Sim' | 'Não';
   incidente_envolve_empreteiro: 'Sim' | 'Não';
   nome_comercial_empreteiro?: string;
-  natureza_e_extensao_incidente: 'Intoxicação leve' | 'Intoxicação grave' | 'Ferimento leve' | 'Ferimento grave' | 'Morte' | 'Nenhum' | 'Outros';
-  possiveis_causas_acidente_metodologia: 'Falta de procedimentos para actividade' | 'Falhas no procedimento existente' | 'Falta de plano de trabalho' | 'Falha na comunicação' | 'Outros';
-  possiveis_causas_acidente_equipamentos: 'Falha de equipamento' | 'Equipamento inapropriado' | 'Falha na protecção do equipamento' | 'Falha na sinalização' | 'Espaço inapropriado para equipamento' | 'Outros';
-  possiveis_causas_acidente_material: 'Ferramenta defeituosa' | 'Falha na ferramenta' | 'Falta de inventário' | 'EPI inadequado' | 'Outros';
-  possiveis_causas_acidente_colaboradores: 'Falta de treinamento' | 'Negligência do colaborador' | 'Negligência do operador sazonal' | 'Não concordância com procedimentos' | 'Uso inadequado de equipamento' | 'Outros';
-  possiveis_causas_acidente_ambiente_e_seguranca: 'Agentes perigosos' | 'Falta de sinalização' | 'Pavimento irregular' | 'Pavimento escorregadio' | 'Outros';
-  possiveis_causas_acidente_medicoes: 'Falta no instrumento de medição' | 'Instrumento de ajustamento inadequado' | 'Falha no instrumento de calibração' | 'Falta de inspenção' | 'Outros';
+  natureza_e_extensao_incidente:
+    | 'Intoxicação leve'
+    | 'Intoxicação grave'
+    | 'Ferimento leve'
+    | 'Ferimento grave'
+    | 'Morte'
+    | 'Nenhum'
+    | 'Outros';
+  possiveis_causas_acidente_metodologia:
+    | 'Falta de procedimentos para actividade'
+    | 'Falhas no procedimento existente'
+    | 'Falta de plano de trabalho'
+    | 'Falha na comunicação'
+    | 'Outros';
+  possiveis_causas_acidente_equipamentos:
+    | 'Falha de equipamento'
+    | 'Equipamento inapropriado'
+    | 'Falha na protecção do equipamento'
+    | 'Falha na sinalização'
+    | 'Espaço inapropriado para equipamento'
+    | 'Outros';
+  possiveis_causas_acidente_material:
+    | 'Ferramenta defeituosa'
+    | 'Falha na ferramenta'
+    | 'Falta de inventário'
+    | 'EPI inadequado'
+    | 'Outros';
+  possiveis_causas_acidente_colaboradores:
+    | 'Falta de treinamento'
+    | 'Negligência do colaborador'
+    | 'Negligência do operador sazonal'
+    | 'Não concordância com procedimentos'
+    | 'Uso inadequado de equipamento'
+    | 'Outros';
+  possiveis_causas_acidente_ambiente_e_seguranca:
+    | 'Agentes perigosos'
+    | 'Falta de sinalização'
+    | 'Pavimento irregular'
+    | 'Pavimento escorregadio'
+    | 'Outros';
+  possiveis_causas_acidente_medicoes:
+    | 'Falta no instrumento de medição'
+    | 'Instrumento de ajustamento inadequado'
+    | 'Falha no instrumento de calibração'
+    | 'Falta de inspenção'
+    | 'Outros';
   pessoa_envolvida: PessoaEnvolvida;
   pessoas_envolvidas_na_investigacao: PessoasEnvolvidasNaInvestigacao[];
   accoes_imediatas_e_correctivas: AccoesImediatasECorrectivas[];
@@ -73,8 +118,10 @@ interface FirstAidKitChecklist {
 }
 
 interface Incident {
-  id?: number;
+  id?: string;
   description: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface IncidentFlashReport {

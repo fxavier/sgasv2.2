@@ -1012,14 +1012,15 @@ enum LandUse {
 }
 
 model ContactPerson {
-  id        String   @id @default(uuid())
-  name      String
-  role      String
-  contact   String
-  date      DateTime
-  signature String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                         String                      @id @default(uuid())
+  name                       String
+  role                       String
+  contact                    String
+  date                       DateTime
+  signature                  String?
+  responsibleForVerification ResponsibleForVerification?
+  createdAt                  DateTime                    @default(now())
+  updatedAt                  DateTime                    @updatedAt
 
   @@map("contact_persons")
 }
@@ -1068,4 +1069,95 @@ model EnvironmentalSocialScreening {
   updatedAt                   DateTime                  @updatedAt
 
   @@map("environmental_social_screening")
+}
+
+model PreliminaryEnvironmentalInformation {
+  id                                                    String                       @id @default(uuid())
+  activity_name                                         String
+  activity_type                                         ActivityType
+  other_activity_type                                   String?
+  development_stage                                     DevelopmentStage
+  other_development_stage                               String?
+  proponents                                            String?                      @db.Text
+  address                                               String
+  telephone                                             String?
+  fax                                                   String?
+  mobile_phone                                          String?
+  email                                                 String
+  activity_location                                     String
+  activity_city                                         String
+  activity_locality                                     String?
+  activity_district                                     String?
+  activity_province                                     Provinces
+  geographic_coordinates                                String?                      @db.Text
+  insertion_point                                       InsertionPoint
+  territorial_planning_framework                        TerritorialPlanningFramework
+  activity_infrastructure                               String?                      @db.Text
+  associated_activities                                 String?                      @db.Text
+  construction_operation_technology_description         String?                      @db.Text
+  main_complementary_activities                         String?                      @db.Text
+  labor_type_quantity_origin                            String?                      @db.Text
+  raw_materials_type_quantity_origin_and_provenance     String?                      @db.Text
+  chemicals_used                                        String?                      @db.Text
+  type_origin_water_energy_consumption                  String?                      @db.Text
+  fuels_lubricants_origin                               String?                      @db.Text
+  other_resources_needed                                String?                      @db.Text
+  land_ownership                                        String?                      @db.Text
+  activity_location_alternatives                        String?                      @db.Text
+  brief_description_on_local_regional_ref_env_situation String?                      @db.Text
+  physical_characteristics_of_activity_site             PyhsicalCharacteristics?
+  predominant_ecosystems                                PredominantEcosystems?
+  location_zone                                         LocationZone?
+  type_predominant_vegetation                           TypeOfPredominantVegetation?
+  land_use                                              LandUse?
+  existing_infrastructure_around_activity_area          String?                      @db.Text
+  total_investment_value                                Decimal?                     @db.Decimal(15, 2)
+  created_at                                            DateTime                     @default(now())
+  updated_at                                            DateTime                     @updatedAt
+
+  @@map("preliminary_environmental_information")
+}
+
+model EmbeddedMitigation {
+  id                                String @id @default(uuid())
+  item_number                       String
+  issue                             String
+  potential_impact_managed          String
+  mitigation_measure                String
+  timing                            String
+  responsibility_for_implementation String
+  means_of_verification             String
+
+  @@map("embedded_mitigation")
+}
+
+model PlanningOrConstructionPhase {
+  id                                String @id @default(uuid())
+  item_number                       String
+  issue                             String
+  potential_impact_managed          String
+  mitigation_measure                String
+  timing                            String
+  responsibility_for_implementation String
+  means_of_verification             String
+
+  @@map("planning_or_construction_phase")
+}
+
+// Model for ResponsibleForVerification that inherits from ContactPerson
+model ResponsibleForVerification {
+  id              String        @id @default(uuid())
+  contactPerson   ContactPerson @relation(fields: [contactPersonId], references: [id])
+  contactPersonId String        @unique
+
+  @@map("responsible_for_verification")
+}
+
+// Model for BiodeversidadeRecursosNaturais
+model BiodeversidadeRecursosNaturais {
+  id          String  @id @default(uuid())
+  reference   String?
+  description String  @db.Text
+
+  @@map("biodiversidade_recursos_naturais")
 }

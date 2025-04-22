@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -8,10 +8,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Pencil, Trash2, Search } from "lucide-react";
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Pencil, Trash2, Search, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,40 +21,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
-
-// Mock data
-const initialObjectives = [
-  {
-    id: 1,
-    strategic_objective: "Increase market share",
-    specific_objective: "Expand into Asian markets",
-    actions_for_achievement: "Establish partnerships with local distributors",
-    responsible_person: "John Doe",
-    necessary_resources: "Marketing budget, Local team",
-    indicator: "Market penetration rate",
-    goal: "15% market share in key Asian markets",
-    monitoring_frequency: "Monthly",
-    deadline: "2024-12-31",
-    observation: "Focus on Japan and South Korea initially",
-    created_at: "2024-03-20",
-  },
-  {
-    id: 2,
-    strategic_objective: "Improve customer satisfaction",
-    specific_objective: "Reduce response time",
-    actions_for_achievement: "Implement new customer service system",
-    responsible_person: "Jane Smith",
-    necessary_resources: "CRM System, Training",
-    indicator: "Average response time",
-    goal: "< 2 hours response time",
-    monitoring_frequency: "Weekly",
-    deadline: "2024-06-30",
-    observation: "Integration with existing systems required",
-    created_at: "2024-03-21",
-  },
-] as SpecificObjective[];
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface SpecificObjectiveListProps {
   onEdit: (objective: SpecificObjective) => void;
@@ -63,112 +31,196 @@ interface SpecificObjectiveListProps {
 const ITEMS_PER_PAGE = 5;
 
 export function SpecificObjectiveList({ onEdit }: SpecificObjectiveListProps) {
-  const [objectives, setObjectives] = useState<SpecificObjective[]>(initialObjectives);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [objectives, setObjectives] = useState<SpecificObjective[]>([]);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
-  const handleDelete = (id: number) => {
-    setObjectives(objectives.filter(obj => obj.id !== id));
-    setDeleteId(null);
-    toast({
-      title: "Objective deleted",
-      description: "The specific objective has been successfully deleted.",
-    });
+  // Fetch specific objectives
+  useEffect(() => {
+    const fetchObjectives = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/specific-objectives');
+        if (!response.ok) {
+          throw new Error('Failed to fetch specific objectives');
+        }
+        const data = await response.json();
+        setObjectives(data);
+      } catch (error) {
+        console.error('Error fetching specific objectives:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load specific objectives. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchObjectives();
+  }, [toast]);
+
+  const handleDelete = async (id: string) => {
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`/api/specific-objectives/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete specific objective');
+      }
+
+      setObjectives(objectives.filter((obj) => obj.id !== id));
+      toast({
+        title: 'Objective deleted',
+        description: 'The specific objective has been successfully deleted.',
+      });
+    } catch (error) {
+      console.error('Error deleting specific objective:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete specific objective. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteId(null);
+    }
   };
 
   // Filter objectives based on search query
-  const filteredObjectives = objectives.filter(obj =>
-    obj.strategic_objective.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    obj.specific_objective.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    obj.responsible_person.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredObjectives = objectives.filter(
+    (obj) =>
+      obj.strategic_objective
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      obj.specific_objective
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      obj.responsible_person.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredObjectives.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedObjectives = filteredObjectives.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const paginatedObjectives = filteredObjectives.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
+  );
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+    <div className='space-y-4'>
+      <div className='flex flex-col sm:flex-row gap-4 items-center justify-between'>
+        <div className='relative w-full sm:w-96'>
+          <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400' />
           <Input
-            placeholder="Search objectives..."
+            placeholder='Search objectives...'
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="pl-10"
+            className='pl-10'
           />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">
-            Showing {Math.min(startIndex + 1, filteredObjectives.length)} to{" "}
-            {Math.min(startIndex + ITEMS_PER_PAGE, filteredObjectives.length)} of{" "}
-            {filteredObjectives.length} objectives
+        <div className='flex items-center gap-2'>
+          <span className='text-sm text-gray-500'>
+            Showing{' '}
+            {filteredObjectives.length > 0
+              ? Math.min(startIndex + 1, filteredObjectives.length)
+              : 0}{' '}
+            to{' '}
+            {Math.min(startIndex + ITEMS_PER_PAGE, filteredObjectives.length)}{' '}
+            of {filteredObjectives.length} objectives
           </span>
         </div>
       </div>
 
-      <div className="rounded-md border bg-white shadow-sm">
-        <div className="min-w-full">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[20%]">Strategic Objective</TableHead>
-                <TableHead className="w-[20%]">Specific Objective</TableHead>
-                <TableHead className="w-[15%]">Responsible</TableHead>
-                <TableHead className="w-[15%]">Goal</TableHead>
-                <TableHead className="w-[15%]">Deadline</TableHead>
-                <TableHead className="w-[15%] text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedObjectives.map((objective) => (
-                <TableRow key={objective.id}>
-                  <TableCell className="font-medium">{objective.strategic_objective}</TableCell>
-                  <TableCell>{objective.specific_objective}</TableCell>
-                  <TableCell>{objective.responsible_person}</TableCell>
-                  <TableCell>
-                    <div className="line-clamp-2">{objective.goal}</div>
-                  </TableCell>
-                  <TableCell>{new Date(objective.deadline).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEdit(objective)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteId(objective.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+      <div className='rounded-md border bg-white shadow-sm'>
+        <div className='min-w-full'>
+          {isLoading ? (
+            <div className='flex justify-center items-center p-8'>
+              <Loader2 className='h-8 w-8 animate-spin text-primary' />
+              <span className='ml-2'>Loading specific objectives...</span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className='w-[20%]'>Strategic Objective</TableHead>
+                  <TableHead className='w-[20%]'>Specific Objective</TableHead>
+                  <TableHead className='w-[15%]'>Responsible</TableHead>
+                  <TableHead className='w-[15%]'>Goal</TableHead>
+                  <TableHead className='w-[15%]'>Deadline</TableHead>
+                  <TableHead className='w-[15%] text-right'>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {paginatedObjectives.length > 0 ? (
+                  paginatedObjectives.map((objective) => (
+                    <TableRow key={objective.id}>
+                      <TableCell className='font-medium'>
+                        {objective.strategic_objective}
+                      </TableCell>
+                      <TableCell>{objective.specific_objective}</TableCell>
+                      <TableCell>{objective.responsible_person}</TableCell>
+                      <TableCell>
+                        <div className='line-clamp-2'>{objective.goal}</div>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(objective.deadline).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className='flex items-center justify-end gap-1'>
+                          <Button
+                            variant='ghost'
+                            size='icon'
+                            onClick={() => onEdit(objective)}
+                          >
+                            <Pencil className='h-4 w-4' />
+                          </Button>
+                          <Button
+                            variant='ghost'
+                            size='icon'
+                            onClick={() => setDeleteId(objective.id!)}
+                          >
+                            <Trash2 className='h-4 w-4' />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className='text-center py-8 text-gray-500'
+                    >
+                      {searchQuery
+                        ? 'No objectives match your search'
+                        : 'No specific objectives found'}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-4">
+        <div className='flex items-center justify-center gap-2 mt-4'>
           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+            variant='outline'
+            size='sm'
+            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
             disabled={currentPage === 1}
           >
             Previous
@@ -176,17 +228,19 @@ export function SpecificObjectiveList({ onEdit }: SpecificObjectiveListProps) {
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <Button
               key={page}
-              variant={currentPage === page ? "default" : "outline"}
-              size="sm"
+              variant={currentPage === page ? 'default' : 'outline'}
+              size='sm'
               onClick={() => setCurrentPage(page)}
             >
               {page}
             </Button>
           ))}
           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+            variant='outline'
+            size='sm'
+            onClick={() =>
+              setCurrentPage((page) => Math.min(totalPages, page + 1))
+            }
             disabled={currentPage === totalPages}
           >
             Next
@@ -194,21 +248,33 @@ export function SpecificObjectiveList({ onEdit }: SpecificObjectiveListProps) {
         </div>
       )}
 
-      <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog
+        open={deleteId !== null}
+        onOpenChange={() => !isDeleting && setDeleteId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the specific objective.
+              This action cannot be undone. This will permanently delete the
+              specific objective.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteId && handleDelete(deleteId)}
-              className="bg-red-600 hover:bg-red-700"
+              className='bg-red-600 hover:bg-red-700'
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
