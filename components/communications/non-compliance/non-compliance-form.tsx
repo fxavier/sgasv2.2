@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -16,57 +16,63 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
-
-// Mock data
-const mockDepartments = [
-  { id: 1, name: "Engineering" },
-  { id: 2, name: "Operations" },
-  { id: 3, name: "Safety" },
-];
-
-const mockSubprojects = [
-  { id: 1, name: "Project Alpha" },
-  { id: 2, name: "Project Beta" },
-  { id: 3, name: "Project Gamma" },
-];
+} from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { Calendar as CalendarIcon, Loader2, Plus } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useState, useEffect } from 'react';
 
 const formSchema = z.object({
-  number: z.string().min(1, "Number is required"),
-  department: z.object({
-    id: z.number(),
-    name: z.string(),
-  }).optional(),
-  subproject: z.object({
-    id: z.number(),
-    name: z.string(),
-  }).optional(),
-  non_compliance_description: z.string().min(10, "Description must be at least 10 characters"),
-  identified_causes: z.string().min(10, "Causes must be at least 10 characters"),
-  corrective_actions: z.string().min(10, "Actions must be at least 10 characters"),
-  responsible_person: z.string().min(2, "Responsible person must be at least 2 characters"),
+  number: z.string().min(1, 'Number is required'),
+  department: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+    })
+    .optional(),
+  subproject: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+    })
+    .optional(),
+  non_compliance_description: z
+    .string()
+    .min(10, 'Description must be at least 10 characters'),
+  identified_causes: z
+    .string()
+    .min(10, 'Causes must be at least 10 characters'),
+  corrective_actions: z
+    .string()
+    .min(10, 'Actions must be at least 10 characters'),
+  responsible_person: z
+    .string()
+    .min(2, 'Responsible person must be at least 2 characters'),
   deadline: z.string(),
   status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED']),
   effectiveness_evaluation: z.enum(['EFFECTIVE', 'NOT_EFFECTIVE']),
-  responsible_person_evaluation: z.string().min(2, "Evaluator must be at least 2 characters"),
-  observation: z.string(),
+  responsible_person_evaluation: z
+    .string()
+    .min(2, 'Evaluator must be at least 2 characters'),
+  observation: z.string().optional(),
 });
 
 interface NonComplianceFormProps {
@@ -74,6 +80,7 @@ interface NonComplianceFormProps {
   onOpenChange: (open: boolean) => void;
   compliance: NonComplianceControl | null;
   onClose: () => void;
+  onSuccess: () => void;
 }
 
 export function NonComplianceForm({
@@ -81,69 +88,206 @@ export function NonComplianceForm({
   onOpenChange,
   compliance,
   onClose,
+  onSuccess,
 }: NonComplianceFormProps) {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [subprojects, setSubprojects] = useState<Subproject[]>([]);
+
+  // Fetch departments and subprojects
+  useEffect(() => {
+    if (open) {
+      const fetchData = async () => {
+        setIsLoading(true);
+        try {
+          // Fetch departments
+          const deptResponse = await fetch('/api/departments');
+          if (deptResponse.ok) {
+            const deptData = await deptResponse.json();
+            setDepartments(deptData);
+          }
+
+          // Fetch subprojects
+          const subprojResponse = await fetch('/api/subprojects');
+          if (subprojResponse.ok) {
+            const subprojData = await subprojResponse.json();
+            setSubprojects(subprojData);
+          }
+        } catch (error) {
+          console.error('Error fetching form data:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load form data. Please try again.',
+            variant: 'destructive',
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchData();
+    }
+  }, [open, toast]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      number: compliance?.number || "",
+      number: compliance?.number || '',
       department: compliance?.department,
       subproject: compliance?.subproject,
-      non_compliance_description: compliance?.non_compliance_description || "",
-      identified_causes: compliance?.identified_causes || "",
-      corrective_actions: compliance?.corrective_actions || "",
-      responsible_person: compliance?.responsible_person || "",
-      deadline: compliance?.deadline || format(new Date(), "yyyy-MM-dd"),
-      status: compliance?.status || "PENDING",
-      effectiveness_evaluation: compliance?.effectiveness_evaluation || "NOT_EFFECTIVE",
-      responsible_person_evaluation: compliance?.responsible_person_evaluation || "",
-      observation: compliance?.observation || "",
+      non_compliance_description: compliance?.non_compliance_description || '',
+      identified_causes: compliance?.identified_causes || '',
+      corrective_actions: compliance?.corrective_actions || '',
+      responsible_person: compliance?.responsible_person || '',
+      deadline: compliance?.deadline || format(new Date(), 'yyyy-MM-dd'),
+      status: compliance?.status || 'PENDING',
+      effectiveness_evaluation:
+        compliance?.effectiveness_evaluation || 'NOT_EFFECTIVE',
+      responsible_person_evaluation:
+        compliance?.responsible_person_evaluation || '',
+      observation: compliance?.observation || '',
     },
   });
 
+  // Update form when compliance changes
+  useEffect(() => {
+    if (compliance) {
+      form.reset({
+        number: compliance.number,
+        department: compliance.department,
+        subproject: compliance.subproject,
+        non_compliance_description: compliance.non_compliance_description,
+        identified_causes: compliance.identified_causes,
+        corrective_actions: compliance.corrective_actions,
+        responsible_person: compliance.responsible_person,
+        deadline: compliance.deadline,
+        status: compliance.status,
+        effectiveness_evaluation: compliance.effectiveness_evaluation,
+        responsible_person_evaluation: compliance.responsible_person_evaluation,
+        observation: compliance.observation,
+      });
+    } else {
+      form.reset({
+        number: '',
+        department: undefined,
+        subproject: undefined,
+        non_compliance_description: '',
+        identified_causes: '',
+        corrective_actions: '',
+        responsible_person: '',
+        deadline: format(new Date(), 'yyyy-MM-dd'),
+        status: 'PENDING',
+        effectiveness_evaluation: 'NOT_EFFECTIVE',
+        responsible_person_evaluation: '',
+        observation: '',
+      });
+    }
+  }, [compliance, form]);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      console.log(values);
-      
-      toast({
-        title: compliance ? "Non-compliance updated" : "Non-compliance created",
-        description: compliance
-          ? "The non-compliance record has been successfully updated."
-          : "The non-compliance record has been successfully created.",
-      });
-      
+      setIsSubmitting(true);
+
+      if (compliance) {
+        // Update existing non-compliance record
+        const response = await fetch(`/api/non-compliance/${compliance.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(values),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error || 'Failed to update non-compliance record'
+          );
+        }
+
+        toast({
+          title: 'Record updated',
+          description:
+            'The non-compliance record has been successfully updated.',
+        });
+      } else {
+        // Create new non-compliance record
+        const response = await fetch('/api/non-compliance', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(values),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error || 'Failed to create non-compliance record'
+          );
+        }
+
+        toast({
+          title: 'Record created',
+          description:
+            'The non-compliance record has been successfully created.',
+        });
+      }
+
       form.reset();
+      onSuccess();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error saving non-compliance record:', error);
       toast({
-        title: "Error",
-        description: "There was an error saving the non-compliance record. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description:
+          error.message ||
+          'There was an error saving the non-compliance record. Please try again.',
+        variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className='sm:max-w-[800px]'>
+          <div className='flex justify-center items-center p-8'>
+            <Loader2 className='h-8 w-8 animate-spin text-primary' />
+            <span className='ml-2'>Loading form data...</span>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className='sm:max-w-[800px] h-[90vh] flex flex-col p-0'>
+        <DialogHeader className='px-6 py-4 border-b'>
           <DialogTitle>
-            {compliance ? "Edit Non-Compliance" : "Create Non-Compliance"}
+            {compliance
+              ? 'Edit Non-Compliance Record'
+              : 'Create Non-Compliance Record'}
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="flex-1 p-6">
+        <ScrollArea className='flex-1 p-6'>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                 <FormField
                   control={form.control}
-                  name="number"
+                  name='number'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter number" {...field} />
+                        <Input placeholder='Enter number' {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -152,27 +296,27 @@ export function NonComplianceForm({
 
                 <FormField
                   control={form.control}
-                  name="department"
+                  name='department'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Department</FormLabel>
                       <Select
                         onValueChange={(value) => {
-                          const selected = mockDepartments.find(
-                            (dept) => dept.id === parseInt(value)
+                          const selected = departments.find(
+                            (dept) => dept.id === value
                           );
                           field.onChange(selected);
                         }}
-                        value={field.value?.id?.toString()}
+                        value={field.value?.id}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select department" />
+                            <SelectValue placeholder='Select department' />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockDepartments.map((dept) => (
-                            <SelectItem key={dept.id} value={dept.id.toString()}>
+                          {departments.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id || ''}>
                               {dept.name}
                             </SelectItem>
                           ))}
@@ -185,27 +329,27 @@ export function NonComplianceForm({
 
                 <FormField
                   control={form.control}
-                  name="subproject"
+                  name='subproject'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Subproject</FormLabel>
                       <Select
                         onValueChange={(value) => {
-                          const selected = mockSubprojects.find(
-                            (proj) => proj.id === parseInt(value)
+                          const selected = subprojects.find(
+                            (proj) => proj.id === value
                           );
                           field.onChange(selected);
                         }}
-                        value={field.value?.id?.toString()}
+                        value={field.value?.id}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select subproject" />
+                            <SelectValue placeholder='Select subproject' />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockSubprojects.map((proj) => (
-                            <SelectItem key={proj.id} value={proj.id.toString()}>
+                          {subprojects.map((proj) => (
+                            <SelectItem key={proj.id} value={proj.id}>
                               {proj.name}
                             </SelectItem>
                           ))}
@@ -219,14 +363,14 @@ export function NonComplianceForm({
 
               <FormField
                 control={form.control}
-                name="non_compliance_description"
+                name='non_compliance_description'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Non-Compliance Description</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Describe the non-compliance"
-                        className="min-h-[100px]"
+                        placeholder='Describe the non-compliance'
+                        className='min-h-[100px]'
                         {...field}
                       />
                     </FormControl>
@@ -237,14 +381,14 @@ export function NonComplianceForm({
 
               <FormField
                 control={form.control}
-                name="identified_causes"
+                name='identified_causes'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Identified Causes</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Describe the identified causes"
-                        className="min-h-[100px]"
+                        placeholder='Describe the identified causes'
+                        className='min-h-[100px]'
                         {...field}
                       />
                     </FormControl>
@@ -255,14 +399,14 @@ export function NonComplianceForm({
 
               <FormField
                 control={form.control}
-                name="corrective_actions"
+                name='corrective_actions'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Corrective Actions</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Describe the corrective actions"
-                        className="min-h-[100px]"
+                        placeholder='Describe the corrective actions'
+                        className='min-h-[100px]'
                         {...field}
                       />
                     </FormControl>
@@ -271,15 +415,18 @@ export function NonComplianceForm({
                 )}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                 <FormField
                   control={form.control}
-                  name="responsible_person"
+                  name='responsible_person'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Responsible Person</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter responsible person" {...field} />
+                        <Input
+                          placeholder='Enter responsible person'
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -288,37 +435,37 @@ export function NonComplianceForm({
 
                 <FormField
                   control={form.control}
-                  name="deadline"
+                  name='deadline'
                   render={({ field }) => (
-                    <FormItem className="flex flex-col">
+                    <FormItem className='flex flex-col'>
                       <FormLabel>Deadline</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
-                              variant={"outline"}
+                              variant={'outline'}
                               className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground'
                               )}
                             >
                               {field.value ? (
-                                format(new Date(field.value), "PPP")
+                                format(new Date(field.value), 'PPP')
                               ) : (
                                 <span>Pick a date</span>
                               )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              <CalendarIcon className='ml-auto h-4 w-4 opacity-50' />
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className='w-auto p-0' align='start'>
                           <Calendar
-                            mode="single"
+                            mode='single'
                             selected={new Date(field.value)}
-                            onSelect={(date) => field.onChange(format(date!, "yyyy-MM-dd"))}
-                            disabled={(date) =>
-                              date < new Date("1900-01-01")
+                            onSelect={(date) =>
+                              field.onChange(format(date!, 'yyyy-MM-dd'))
                             }
+                            disabled={(date) => date < new Date('1900-01-01')}
                             initialFocus
                           />
                         </PopoverContent>
@@ -330,20 +477,25 @@ export function NonComplianceForm({
 
                 <FormField
                   control={form.control}
-                  name="status"
+                  name='status'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
+                            <SelectValue placeholder='Select status' />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="PENDING">Pending</SelectItem>
-                          <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                          <SelectItem value="COMPLETED">Completed</SelectItem>
+                          <SelectItem value='PENDING'>Pending</SelectItem>
+                          <SelectItem value='IN_PROGRESS'>
+                            In Progress
+                          </SelectItem>
+                          <SelectItem value='COMPLETED'>Completed</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -352,22 +504,27 @@ export function NonComplianceForm({
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                 <FormField
                   control={form.control}
-                  name="effectiveness_evaluation"
+                  name='effectiveness_evaluation'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Effectiveness Evaluation</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select evaluation" />
+                            <SelectValue placeholder='Select evaluation' />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="EFFECTIVE">Effective</SelectItem>
-                          <SelectItem value="NOT_EFFECTIVE">Not Effective</SelectItem>
+                          <SelectItem value='EFFECTIVE'>Effective</SelectItem>
+                          <SelectItem value='NOT_EFFECTIVE'>
+                            Not Effective
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -377,12 +534,12 @@ export function NonComplianceForm({
 
                 <FormField
                   control={form.control}
-                  name="responsible_person_evaluation"
+                  name='responsible_person_evaluation'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Responsible Person for Evaluation</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter evaluator name" {...field} />
+                        <Input placeholder='Enter evaluator name' {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -392,14 +549,14 @@ export function NonComplianceForm({
 
               <FormField
                 control={form.control}
-                name="observation"
+                name='observation'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Observation</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Enter observations"
-                        className="min-h-[100px]"
+                        placeholder='Enter observations'
+                        className='min-h-[100px]'
                         {...field}
                       />
                     </FormControl>
@@ -410,12 +567,30 @@ export function NonComplianceForm({
             </form>
           </Form>
         </ScrollArea>
-        <div className="flex justify-end gap-4 p-6 border-t">
-          <Button type="button" variant="outline" onClick={onClose}>
+        <div className='flex justify-end gap-4 p-6 border-t'>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
-          <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
-            {compliance ? "Update" : "Create"}
+          <Button
+            type='submit'
+            onClick={form.handleSubmit(onSubmit)}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                {compliance ? 'Updating...' : 'Creating...'}
+              </>
+            ) : compliance ? (
+              'Update'
+            ) : (
+              'Create'
+            )}
           </Button>
         </div>
       </DialogContent>

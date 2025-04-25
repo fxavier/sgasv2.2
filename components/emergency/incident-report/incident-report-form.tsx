@@ -269,21 +269,32 @@ export function IncidentReportForm({
         report?.possiveis_causas_acidente_medicoes || 'Outros',
       pessoa_envolvida: report?.pessoa_envolvida
         ? {
-            ...report.pessoa_envolvida,
-            id: report.pessoa_envolvida.id?.toString(),
+            id: report.pessoa_envolvida.id?.toString() || '',
+            nome: report.pessoa_envolvida.nome || '',
+            departamento: report.pessoa_envolvida.departamento || {
+              id: '',
+              name: '',
+            },
+            outras_informacoes:
+              report.pessoa_envolvida.outras_informacoes || '',
           }
-        : undefined,
+        : {
+            id: '',
+            nome: '',
+            departamento: { id: '', name: '' },
+            outras_informacoes: '',
+          },
       pessoas_envolvidas_na_investigacao:
         report?.pessoas_envolvidas_na_investigacao
           ? report.pessoas_envolvidas_na_investigacao.map((p) => ({
               ...p,
-              id: p.id?.toString(),
+              id: p.id?.toString() || '',
             }))
           : [],
       accoes_imediatas_e_correctivas: report?.accoes_imediatas_e_correctivas
         ? report.accoes_imediatas_e_correctivas.map((a) => ({
             ...a,
-            id: a.id?.toString(),
+            id: a.id?.toString() || '',
           }))
         : [],
       fotografia_frontal: report?.fotografia_frontal || '',
@@ -354,6 +365,7 @@ export function IncidentReportForm({
   // Update form when report changes
   useEffect(() => {
     if (report) {
+      console.log('Resetting form with report data:', report);
       form.reset({
         nome: report.nome,
         funcao: report.funcao,
@@ -391,21 +403,32 @@ export function IncidentReportForm({
           report.possiveis_causas_acidente_medicoes,
         pessoa_envolvida: report.pessoa_envolvida
           ? {
-              ...report.pessoa_envolvida,
-              id: report.pessoa_envolvida.id?.toString(),
+              id: report.pessoa_envolvida.id?.toString() || '',
+              nome: report.pessoa_envolvida.nome || '',
+              departamento: report.pessoa_envolvida.departamento || {
+                id: '',
+                name: '',
+              },
+              outras_informacoes:
+                report.pessoa_envolvida.outras_informacoes || '',
             }
-          : undefined,
+          : {
+              id: '',
+              nome: '',
+              departamento: { id: '', name: '' },
+              outras_informacoes: '',
+            },
         pessoas_envolvidas_na_investigacao:
           report.pessoas_envolvidas_na_investigacao
             ? report.pessoas_envolvidas_na_investigacao.map((p) => ({
                 ...p,
-                id: p.id?.toString(),
+                id: p.id?.toString() || '',
               }))
             : [],
         accoes_imediatas_e_correctivas: report.accoes_imediatas_e_correctivas
           ? report.accoes_imediatas_e_correctivas.map((a) => ({
               ...a,
-              id: a.id?.toString(),
+              id: a.id?.toString() || '',
             }))
           : [],
         fotografia_frontal: report.fotografia_frontal,
@@ -415,6 +438,7 @@ export function IncidentReportForm({
         fotografia_do_melhor_angulo: report.fotografia_do_melhor_angulo,
         fotografia: report.fotografia,
       });
+      console.log('Form reset complete with values:', form.getValues());
     }
   }, [report, form]);
 
@@ -464,10 +488,14 @@ export function IncidentReportForm({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       console.log('Submitting form with values:', values);
+      console.log('Pessoa envolvida:', values.pessoa_envolvida);
 
       // Check if pessoa_envolvida is undefined or missing required fields
       if (!values.pessoa_envolvida || !values.pessoa_envolvida.id) {
-        console.error('Missing required field: pessoa_envolvida');
+        console.error(
+          'Missing required field: pessoa_envolvida',
+          values.pessoa_envolvida
+        );
         toast({
           title: 'Missing information',
           description: 'Please select a person involved in the incident',
@@ -496,56 +524,177 @@ export function IncidentReportForm({
 
       setIsSubmitting(true);
 
-      if (report) {
-        // Update existing report
-        console.log('Updating report:', report.id);
-        const response = await fetch(`/api/incident-reports/${report.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(values),
-        });
+      // Convert form data to the expected API format
+      const apiData = {
+        nome: values.nome,
+        funcao: values.funcao,
+        departamento: values.departamento,
+        subprojecto: values.subprojecto,
+        data: values.data,
+        hora: `${values.data}T${values.hora}:00.000Z`,
+        local: values.local,
+        actividadeEmCurso: values.actividade_em_curso,
+        descricaoDoAcidente: values.descricao_do_acidente,
+        tipoDeIncidente: values.tipo_de_incidente,
+        equipamentoEnvolvido: values.equipamento_envolvido,
+        observacao: values.observacao,
+        colaboradorEnvolvidoOutroAcidenteAntes:
+          values.colaborador_envolvido_outro_acidente_antes === 'Sim'
+            ? 'Sim'
+            : 'Nao',
+        realizadaAnaliseRiscoImpactoAmbientalAntes:
+          values.realizada_analise_risco_impacto_ambiental_antes === 'Sim'
+            ? 'Sim'
+            : 'Nao',
+        existeProcedimentoParaActividade:
+          values.existe_procedimento_para_actividade === 'Sim' ? 'Sim' : 'Nao',
+        colaboradorRecebeuTreinamento:
+          values.colaborador_recebeu_treinamento === 'Sim' ? 'Sim' : 'Nao',
+        incidenteEnvolveEmpreteiro:
+          values.incidente_envolve_empreteiro === 'Sim' ? 'Sim' : 'Nao',
+        nomeComercialEmpreteiro: values.nome_comercial_empreteiro,
+        naturezaEExtensaoIncidente: mapNaturezaEExtensaoIncidente(
+          values.natureza_e_extensao_incidente
+        ),
+        possiveisCausasAcidenteMetodologia:
+          mapPossiveisCausasAcidenteMetodologia(
+            values.possiveis_causas_acidente_metodologia
+          ),
+        possiveisCausasAcidenteEquipamentos:
+          mapPossiveisCausasAcidenteEquipamentos(
+            values.possiveis_causas_acidente_equipamentos
+          ),
+        possiveisCausasAcidenteMaterial: mapPossiveisCausasAcidenteMaterial(
+          values.possiveis_causas_acidente_material
+        ),
+        possiveisCausasAcidenteColaboradores:
+          mapPossiveisCausasAcidenteColaboradores(
+            values.possiveis_causas_acidente_colaboradores
+          ),
+        possiveisCausasAcidenteAmbienteESeguranca:
+          mapPossiveisCausasAcidenteAmbienteESeguranca(
+            values.possiveis_causas_acidente_ambiente_e_seguranca
+          ),
+        possiveisCausasAcidenteMedicoes: mapPossiveisCausasAcidenteMedicoes(
+          values.possiveis_causas_acidente_medicoes
+        ),
+        pessoaEnvolvida: {
+          id: values.pessoa_envolvida.id,
+        },
+        pessoasEnvolvidasNaInvestigacao:
+          values.pessoas_envolvidas_na_investigacao
+            ? values.pessoas_envolvidas_na_investigacao.map((p) => ({
+                id: p.id,
+              }))
+            : [],
+        accoesImediatasECorrectivas: values.accoes_imediatas_e_correctivas
+          ? values.accoes_imediatas_e_correctivas.map((a) => ({ id: a.id }))
+          : [],
+        fotografiaFrontal: values.fotografia_frontal,
+        fotografiaPosterior: values.fotografia_posterior,
+        fotografiaLateralDireita: values.fotografia_lateral_direita,
+        fotografiaLateralEsquerda: values.fotografia_lateral_esquerda,
+        fotografiaDoMelhorAngulo: values.fotografia_do_melhor_angulo,
+        fotografia: values.fotografia,
+      };
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('Update response error:', errorData);
-          throw new Error(
-            errorData.error || 'Failed to update incident report'
-          );
-        }
+      console.log('Formatted API data:', JSON.stringify(apiData, null, 2));
 
-        toast({
-          title: 'Report updated',
-          description: 'The incident report has been successfully updated.',
-        });
-      } else {
-        // Create new report
+      // Creating new report
+      if (!report) {
         console.log('Creating new report');
-        const response = await fetch('/api/incident-reports', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(values),
-        });
+        try {
+          const response = await fetch('/api/incident-reports', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(apiData),
+          });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('Create response error:', errorData);
-          throw new Error(
-            errorData.error || 'Failed to create incident report'
-          );
+          console.log('Create response status:', response.status);
+
+          let errorData;
+          try {
+            errorData = await response.json();
+            console.log('Response body:', errorData);
+          } catch (e) {
+            console.error('Error parsing response:', e);
+            errorData = { error: 'Failed to parse server response' };
+          }
+
+          if (!response.ok) {
+            console.error('Create response error:', errorData);
+            throw new Error(
+              errorData.error || 'Failed to create incident report'
+            );
+          }
+
+          toast({
+            title: 'Report created',
+            description: 'The incident report has been successfully created.',
+          });
+          form.reset();
+          onClose();
+        } catch (error) {
+          console.error('Error in create fetch operation:', error);
+          toast({
+            title: 'Error',
+            description:
+              'There was an error saving the incident report. Please try again.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return; // Don't continue if there's an error
         }
+      } else {
+        // Updating existing report
+        console.log('Updating report:', report.id);
+        try {
+          const response = await fetch(`/api/incident-reports/${report.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(apiData),
+          });
 
-        toast({
-          title: 'Report created',
-          description: 'The incident report has been successfully created.',
-        });
+          console.log('Update response status:', response.status);
+
+          let errorData;
+          try {
+            errorData = await response.json();
+            console.log('Response body:', errorData);
+          } catch (e) {
+            console.error('Error parsing response:', e);
+            errorData = { error: 'Failed to parse server response' };
+          }
+
+          if (!response.ok) {
+            console.error('Update response error:', errorData);
+            throw new Error(
+              errorData.error || 'Failed to update incident report'
+            );
+          }
+
+          toast({
+            title: 'Report updated',
+            description: 'The incident report has been successfully updated.',
+          });
+          form.reset();
+          onClose();
+        } catch (error) {
+          console.error('Error in update fetch operation:', error);
+          toast({
+            title: 'Error',
+            description:
+              'There was an error updating the incident report. Please try again.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return; // Don't continue if there's an error
+        }
       }
-
-      form.reset();
-      onClose();
     } catch (error) {
       console.error('Error saving incident report:', error);
       toast({
@@ -586,6 +735,93 @@ export function IncidentReportForm({
       setUploading(false);
     }
   };
+
+  // Helper functions to map UI-friendly values to database enum values
+  function mapNaturezaEExtensaoIncidente(value: string): string {
+    const mapping: Record<string, string> = {
+      'Intoxicação leve': 'Intoxicacao_leve',
+      'Intoxicação grave': 'Intoxicacao_grave',
+      'Ferimento leve': 'Ferimento_leve',
+      'Ferimento grave': 'Ferimento_grave',
+      Morte: 'Morte',
+      Nenhum: 'Nenhum',
+      Outros: 'Outros',
+    };
+    return mapping[value] || value;
+  }
+
+  function mapPossiveisCausasAcidenteMetodologia(value: string): string {
+    const mapping: Record<string, string> = {
+      'Falta de procedimentos para actividade':
+        'Falta_de_procedimentos_para_actividade',
+      'Falhas no procedimento existente': 'Falhas_no_procedimento_existente',
+      'Falta de plano de trabalho': 'Falta_de_plano_de_trabalho',
+      'Falha na comunicação': 'Falha_na_comunicacao',
+      Outros: 'Outros',
+    };
+    return mapping[value] || value;
+  }
+
+  function mapPossiveisCausasAcidenteEquipamentos(value: string): string {
+    const mapping: Record<string, string> = {
+      'Falha de equipamento': 'Falha_de_equipamento',
+      'Equipamento inapropriado': 'Equipamento_inapropriado',
+      'Falha na protecção do equipamento': 'Falha_na_proteccao_do_equipamento',
+      'Falha na sinalização': 'Falha_na_sinalizacao',
+      'Espaço inapropriado para equipamento':
+        'Espaco_inapropriado_para_equipamento',
+      Outros: 'Outros',
+    };
+    return mapping[value] || value;
+  }
+
+  function mapPossiveisCausasAcidenteMaterial(value: string): string {
+    const mapping: Record<string, string> = {
+      'Ferramenta defeituosa': 'Ferramenta_defeituosa',
+      'Falha na ferramenta': 'Falha_na_ferramenta',
+      'Falta de inventário': 'Falta_de_inventario',
+      'EPI inadequado': 'EPI_inadequado',
+      Outros: 'Outros',
+    };
+    return mapping[value] || value;
+  }
+
+  function mapPossiveisCausasAcidenteColaboradores(value: string): string {
+    const mapping: Record<string, string> = {
+      'Falta de treinamento': 'Falta_de_treinamento',
+      'Negligência do colaborador': 'Negligencia_do_colaborador',
+      'Negligência do operador sazonal': 'Negligencia_do_operador_sazonal',
+      'Não concordância com procedimentos':
+        'Nao_concardancia_com_procedimentos',
+      'Uso inadequado de equipamento': 'Uso_inadequado_de_equipamento',
+      Outros: 'Outros',
+    };
+    return mapping[value] || value;
+  }
+
+  function mapPossiveisCausasAcidenteAmbienteESeguranca(value: string): string {
+    const mapping: Record<string, string> = {
+      'Agentes perigosos': 'Agentes_perigosos',
+      'Falta de sinalização': 'Falta_de_sinalizacao',
+      'Pavimento irregular': 'Pavimento_irregular',
+      'Pavimento escorregadio': 'Pavimento_escorregadio',
+      Outros: 'Outros',
+    };
+    return mapping[value] || value;
+  }
+
+  function mapPossiveisCausasAcidenteMedicoes(value: string): string {
+    const mapping: Record<string, string> = {
+      'Falta no instrumento de medição': 'Falta_no_instrumento_de_medicao',
+      'Instrumento de ajustamento inadequado':
+        'Instrumento_de_ajustamento_inadequado',
+      'Falha no instrumento de calibração':
+        'Falha_no_instrumento_de_calibracao',
+      'Falta de inspenção': 'Falta_de_inspencao',
+      Outros: 'Outros',
+    };
+    return mapping[value] || value;
+  }
 
   if (isLoading) {
     return (
@@ -1339,10 +1575,34 @@ export function IncidentReportForm({
                         <div className='flex gap-2'>
                           <Select
                             onValueChange={(value) => {
+                              console.log(
+                                'Selecting pessoa envolvida with ID:',
+                                value
+                              );
                               const selected = pessoasEnvolvidas.find(
                                 (pessoa) => pessoa.id?.toString() === value
                               );
-                              field.onChange(selected);
+                              console.log(
+                                'Selected pessoa envolvida:',
+                                selected
+                              );
+                              if (selected) {
+                                // Ensure we construct a complete object with all required properties
+                                field.onChange({
+                                  id: selected.id?.toString() || '',
+                                  nome: selected.nome || '',
+                                  departamento: selected.departamento || {
+                                    id: '',
+                                    name: '',
+                                  },
+                                  outras_informacoes:
+                                    selected.outras_informacoes || '',
+                                });
+                                console.log(
+                                  'Updated field value:',
+                                  form.getValues('pessoa_envolvida')
+                                );
+                              }
                             }}
                             value={field.value?.id?.toString() || ''}
                           >

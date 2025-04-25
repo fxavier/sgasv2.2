@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/db';
+import db from '@/lib/db';
 
 // GET a specific impact assessment by ID
 export async function GET(
@@ -8,38 +8,43 @@ export async function GET(
 ) {
   try {
     const id = params.id;
-    
-    const assessment = await prisma.environAndSocialRiskAndImapactAssessement.findUnique({
-      where: {
-        id,
-      },
-      include: {
-        department: true,
-        subproject: true,
-        risksAndImpact: true,
-        environmentalFactor: true,
-        legalRequirements: true,
-      },
-    });
-    
+
+    const assessment =
+      await db.environAndSocialRiskAndImapactAssessement.findUnique({
+        where: {
+          id,
+        },
+        include: {
+          department: true,
+          subproject: true,
+          risksAndImpact: true,
+          environmentalFactor: true,
+          legalRequirements: true,
+        },
+      });
+
     if (!assessment) {
       return NextResponse.json(
         { error: 'Impact assessment not found' },
         { status: 404 }
       );
     }
-    
+
     // Format the response to match frontend expectations
     const formattedAssessment = {
       id: assessment.id,
-      departament: assessment.department ? {
-        id: assessment.department.id,
-        name: assessment.department.name,
-      } : null,
-      subproject: assessment.subproject ? {
-        id: assessment.subproject.id,
-        name: assessment.subproject.name,
-      } : null,
+      departament: assessment.department
+        ? {
+            id: assessment.department.id,
+            name: assessment.department.name,
+          }
+        : null,
+      subproject: assessment.subproject
+        ? {
+            id: assessment.subproject.id,
+            name: assessment.subproject.name,
+          }
+        : null,
       activity: assessment.activity,
       risks_and_impact: {
         id: assessment.risksAndImpact.id,
@@ -60,7 +65,7 @@ export async function GET(
       deadline: assessment.deadline.toISOString(),
       responsible: assessment.responsible,
       effectiveness_assessment: assessment.effectivenessAssessment,
-      legal_requirements: assessment.legalRequirements.map(req => ({
+      legal_requirements: assessment.legalRequirements.map((req) => ({
         id: req.id,
         number: req.number,
         document_title: req.documentTitle,
@@ -70,7 +75,7 @@ export async function GET(
       created_at: assessment.createdAt.toISOString(),
       updated_at: assessment.updatedAt.toISOString(),
     };
-    
+
     return NextResponse.json(formattedAssessment);
   } catch (error) {
     console.error('Error fetching impact assessment:', error);
@@ -89,7 +94,7 @@ export async function PUT(
   try {
     const id = params.id;
     const body = await request.json();
-    
+
     const {
       departament,
       subproject,
@@ -111,17 +116,22 @@ export async function PUT(
       compliance_requirements,
       observations,
     } = body;
-    
+
     // Validate required fields
-    if (!activity || !risks_and_impact || !environmental_factor || !description_of_measures) {
+    if (
+      !activity ||
+      !risks_and_impact ||
+      !environmental_factor ||
+      !description_of_measures
+    ) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
-    
+
     // First, disconnect all existing legal requirements
-    await prisma.environAndSocialRiskAndImapactAssessement.update({
+    await db.environAndSocialRiskAndImapactAssessement.update({
       where: { id },
       data: {
         legalRequirements: {
@@ -129,55 +139,62 @@ export async function PUT(
         },
       },
     });
-    
+
     // Then update the assessment with new data
-    const assessment = await prisma.environAndSocialRiskAndImapactAssessement.update({
-      where: {
-        id,
-      },
-      data: {
-        departmentId: departament?.id || null,
-        subprojectId: subproject?.id || null,
-        activity,
-        risksAndImpactId: risks_and_impact.id,
-        environmentalFactorId: environmental_factor.id,
-        lifeCycle: life_cycle,
-        statute,
-        extension,
-        duration,
-        intensity,
-        probability,
-        significance,
-        descriptionOfMeasures: description_of_measures,
-        deadline: new Date(deadline),
-        responsible,
-        effectivenessAssessment: effectiveness_assessment,
-        complianceRequirements: compliance_requirements,
-        observations: observations || '',
-        legalRequirements: {
-          connect: legal_requirements ? legal_requirements.map(req => ({ id: req.id })) : [],
+    const assessment =
+      await db.environAndSocialRiskAndImapactAssessement.update({
+        where: {
+          id,
         },
-      },
-      include: {
-        department: true,
-        subproject: true,
-        risksAndImpact: true,
-        environmentalFactor: true,
-        legalRequirements: true,
-      },
-    });
-    
+        data: {
+          departmentId: departament?.id || null,
+          subprojectId: subproject?.id || null,
+          activity,
+          risksAndImpactId: risks_and_impact.id,
+          environmentalFactorId: environmental_factor.id,
+          lifeCycle: life_cycle,
+          statute,
+          extension,
+          duration,
+          intensity,
+          probability,
+          significance,
+          descriptionOfMeasures: description_of_measures,
+          deadline: new Date(deadline),
+          responsible,
+          effectivenessAssessment: effectiveness_assessment,
+          complianceRequirements: compliance_requirements,
+          observations: observations || '',
+          legalRequirements: {
+            connect: legal_requirements
+              ? legal_requirements.map((req) => ({ id: req.id }))
+              : [],
+          },
+        },
+        include: {
+          department: true,
+          subproject: true,
+          risksAndImpact: true,
+          environmentalFactor: true,
+          legalRequirements: true,
+        },
+      });
+
     // Format the response to match frontend expectations
     const formattedAssessment = {
       id: assessment.id,
-      departament: assessment.department ? {
-        id: assessment.department.id,
-        name: assessment.department.name,
-      } : null,
-      subproject: assessment.subproject ? {
-        id: assessment.subproject.id,
-        name: assessment.subproject.name,
-      } : null,
+      departament: assessment.department
+        ? {
+            id: assessment.department.id,
+            name: assessment.department.name,
+          }
+        : null,
+      subproject: assessment.subproject
+        ? {
+            id: assessment.subproject.id,
+            name: assessment.subproject.name,
+          }
+        : null,
       activity: assessment.activity,
       risks_and_impact: {
         id: assessment.risksAndImpact.id,
@@ -198,7 +215,7 @@ export async function PUT(
       deadline: assessment.deadline.toISOString(),
       responsible: assessment.responsible,
       effectiveness_assessment: assessment.effectivenessAssessment,
-      legal_requirements: assessment.legalRequirements.map(req => ({
+      legal_requirements: assessment.legalRequirements.map((req) => ({
         id: req.id,
         number: req.number,
         document_title: req.documentTitle,
@@ -208,7 +225,7 @@ export async function PUT(
       created_at: assessment.createdAt.toISOString(),
       updated_at: assessment.updatedAt.toISOString(),
     };
-    
+
     return NextResponse.json(formattedAssessment);
   } catch (error) {
     console.error('Error updating impact assessment:', error);
@@ -226,9 +243,9 @@ export async function DELETE(
 ) {
   try {
     const id = params.id;
-    
+
     // First, disconnect all legal requirements
-    await prisma.environAndSocialRiskAndImapactAssessement.update({
+    await db.environAndSocialRiskAndImapactAssessement.update({
       where: { id },
       data: {
         legalRequirements: {
@@ -236,14 +253,14 @@ export async function DELETE(
         },
       },
     });
-    
+
     // Then delete the assessment
-    await prisma.environAndSocialRiskAndImapactAssessement.delete({
+    await db.environAndSocialRiskAndImapactAssessement.delete({
       where: {
         id,
       },
     });
-    
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting impact assessment:', error);

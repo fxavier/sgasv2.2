@@ -348,7 +348,7 @@ export function Sidebar() {
     >
       <div className='p-4 flex items-center justify-between border-b'>
         <div className={cn('flex items-center', collapsed && 'hidden')}>
-          <h1 className='text-xl font-bold text-primary'>Admin</h1>
+          <h1 className='text-xl font-bold text-primary'>SGAS</h1>
         </div>
         <Button
           variant='ghost'

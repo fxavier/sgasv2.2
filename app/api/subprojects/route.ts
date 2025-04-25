@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/db';
+import db from '@/lib/db';
 
 // GET all subprojects
 export async function GET() {
   try {
-    const subprojects = await prisma.subproject.findMany({
+    const subprojects = await db.subproject.findMany({
       orderBy: {
         name: 'asc',
       },
     });
-    
+
     return NextResponse.json(subprojects);
   } catch (error) {
     console.error('Error fetching subprojects:', error);
@@ -24,26 +24,26 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
-    const { 
-      name, 
-      contractReference, 
-      contractorName, 
-      estimatedCost, 
-      location, 
-      geographicCoordinates, 
-      type, 
-      approximateArea 
+
+    const {
+      name,
+      contractReference,
+      contractorName,
+      estimatedCost,
+      location,
+      geographicCoordinates,
+      type,
+      approximateArea,
     } = body;
-    
+
     if (!name || !location || !type || !approximateArea) {
       return NextResponse.json(
         { error: 'Name, location, type, and approximate area are required' },
         { status: 400 }
       );
     }
-    
-    const subproject = await prisma.subproject.create({
+
+    const subproject = await db.subproject.create({
       data: {
         name,
         contractReference,
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         approximateArea,
       },
     });
-    
+
     return NextResponse.json(subproject, { status: 201 });
   } catch (error) {
     console.error('Error creating subproject:', error);

@@ -691,13 +691,13 @@ enum Type {
   Subcontrator
 }
 
-enum FurtherInvestigatioRequired {
+enum FurtherInvestigationRequired {
   Yes
   No
 }
 
 model IncidentFlashReport {
-  id                           String                      @id @default(uuid())
+  id                           String                       @id @default(uuid())
   incidents                    Incidents[]
   dateIncident                 DateTime
   timeIncident                 DateTime
@@ -713,15 +713,15 @@ model IncidentFlashReport {
   witnessStatement             String?
   preliminaryFindings          String?
   recomendations               String
-  furtherInvestigationRequired FurtherInvestigatioRequired
-  incidentReportable           FurtherInvestigatioRequired
-  lendersToBeNotified          FurtherInvestigatioRequired
+  furtherInvestigationRequired FurtherInvestigationRequired // Fixed spelling
+  incidentReportable           FurtherInvestigationRequired // Fixed spelling
+  lendersToBeNotified          FurtherInvestigationRequired // Fixed spelling
   authorOfReport               String
-  dateCreated                  DateTime                    @default(now())
+  dateCreated                  DateTime                     @default(now())
   approverName                 String
   dateApproved                 DateTime
-  createdAt                    DateTime                    @default(now())
-  updatedAt                    DateTime                    @updatedAt
+  createdAt                    DateTime                     @default(now())
+  updatedAt                    DateTime                     @updatedAt
 
   @@map("incident_flash_reports")
 }

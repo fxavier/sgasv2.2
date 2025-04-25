@@ -441,7 +441,7 @@ export async function DELETE(
   try {
     const id = params.id;
 
-    // Check if the report exists
+    // Check if the report exis
     const existingReport = await db.relatorioAcidenteIncidente.findUnique({
       where: {
         id,

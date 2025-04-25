@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/db';
+import db from '@/lib/db';
 
 // GET a specific document by ID
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   try {
     const id = params.id;
 
-    const document = await prisma.document.findUnique({
+    const document = await db.document.findUnique({
       where: {
         id,
       },
@@ -91,7 +91,7 @@ export async function PUT(
       );
     }
 
-    const document = await prisma.document.update({
+    const document = await db.document.update({
       where: {
         id,
       },
@@ -150,7 +150,7 @@ export async function DELETE(
   try {
     const id = params.id;
 
-    await prisma.document.delete({
+    await db.document.delete({
       where: {
         id,
       },

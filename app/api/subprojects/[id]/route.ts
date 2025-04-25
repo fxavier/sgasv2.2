@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/db';
+import db from '@/lib/db';
 
 // GET a specific subproject by ID
 export async function GET(
@@ -8,20 +8,20 @@ export async function GET(
 ) {
   try {
     const id = params.id;
-    
-    const subproject = await prisma.subproject.findUnique({
+
+    const subproject = await db.subproject.findUnique({
       where: {
         id,
       },
     });
-    
+
     if (!subproject) {
       return NextResponse.json(
         { error: 'Subproject not found' },
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json(subproject);
   } catch (error) {
     console.error('Error fetching subproject:', error);
@@ -40,26 +40,26 @@ export async function PUT(
   try {
     const id = params.id;
     const body = await request.json();
-    
-    const { 
-      name, 
-      contractReference, 
-      contractorName, 
-      estimatedCost, 
-      location, 
-      geographicCoordinates, 
-      type, 
-      approximateArea 
+
+    const {
+      name,
+      contractReference,
+      contractorName,
+      estimatedCost,
+      location,
+      geographicCoordinates,
+      type,
+      approximateArea,
     } = body;
-    
+
     if (!name || !location || !type || !approximateArea) {
       return NextResponse.json(
         { error: 'Name, location, type, and approximate area are required' },
         { status: 400 }
       );
     }
-    
-    const subproject = await prisma.subproject.update({
+
+    const subproject = await db.subproject.update({
       where: {
         id,
       },
@@ -74,7 +74,7 @@ export async function PUT(
         approximateArea,
       },
     });
-    
+
     return NextResponse.json(subproject);
   } catch (error) {
     console.error('Error updating subproject:', error);
@@ -92,27 +92,31 @@ export async function DELETE(
 ) {
   try {
     const id = params.id;
-    
+
     // Check if there are any impact assessments using this subproject
-    const assessmentsUsingSubproject = await prisma.environAndSocialRiskAndImapactAssessement.count({
-      where: {
-        subprojectId: id,
-      },
-    });
-    
+    const assessmentsUsingSubproject =
+      await db.environAndSocialRiskAndImapactAssessement.count({
+        where: {
+          subprojectId: id,
+        },
+      });
+
     if (assessmentsUsingSubproject > 0) {
       return NextResponse.json(
-        { error: 'Cannot delete subproject that is in use by impact assessments' },
+        {
+          error:
+            'Cannot delete subproject that is in use by impact assessments',
+        },
         { status: 400 }
       );
     }
-    
-    await prisma.subproject.delete({
+
+    await db.subproject.delete({
       where: {
         id,
       },
     });
-    
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting subproject:', error);
